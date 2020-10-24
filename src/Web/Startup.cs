@@ -1,8 +1,19 @@
+using System;
+using System.Linq;
+using KNFA.Bots.MTB.Configuration;
+using KNFA.Bots.MTB.Events.Mumble;
+using KNFA.Bots.MTB.Events.Telegram;
+using KNFA.Bots.MTB.Services.Mumble;
+using KNFA.Bots.MTB.Services.Telegram;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using MumbleSharp;
+using SlimMessageBus;
+using SlimMessageBus.Host.AspNetCore;
+using SlimMessageBus.Host.Config;
+using SlimMessageBus.Host.Memory;
 
 namespace KNFA.Bots.MTB
 {
@@ -15,39 +26,66 @@ namespace KNFA.Bots.MTB
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var appConfig = Configuration.Get<ApplicationConfiguration>();
+
+            services.AddSingleton(appConfig.Telegram);
+            services.AddSingleton<TelegramService>();
+            services.AddHostedService(x => x.GetRequiredService<TelegramService>());
+            services.AddSingleton<ITelegramMessageSender>(x => x.GetRequiredService<TelegramService>());
+
+            services.AddSingleton(BuildMessageBus);
+            services.AddSingleton(appConfig.Mumble);
+            services.AddSingleton<EventProtocol>();
+            services.AddSingleton<MumbleClientService>();
+            services.AddHostedService(x => x.GetRequiredService<MumbleClientService>());
+
+            services.AddSingleton<NewTextMessageConsumer>();
+            services.AddSingleton<UserListRequestedConsumer>();
+
+            services.AddHttpContextAccessor();
             services.AddControllersWithViews();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        private static IMessageBus BuildMessageBus(IServiceProvider serviceProvider)
+        {
+            var domainAssembly = typeof(Startup).Assembly;
+
+            var mbb = MessageBusBuilder.Create()
+                .Produce<UserLeft>(x => x.DefaultTopic(x.Settings.MessageType.Name))
+                .Produce<UserEntered>(x => x.DefaultTopic(x.Settings.MessageType.Name))
+                .Produce<UserListRequested>(x => x.DefaultTopic(x.Settings.MessageType.Name))
+                .Produce<TextMessage>(x => x.DefaultTopic(x.Settings.MessageType.Name))
+                .Do(builder =>
+                {
+                    var consumers = domainAssembly
+                        .GetTypes()
+                        .Where(t => t.IsClass && !t.IsAbstract)
+                        .SelectMany(t => t.GetInterfaces(), (t, i) => new { Type = t, Interface = i })
+                        .Where(x => x.Interface.IsGenericType && x.Interface.GetGenericTypeDefinition() == typeof(IConsumer<>))
+                        .Select(x => new { HandlerType = x.Type, EventType = x.Interface.GetGenericArguments()[0] })
+                        .ToList();
+
+                    foreach (var consumerType in consumers)
+                    {
+                        builder.Consume(consumerType.EventType,
+                            x => x.Topic(x.MessageType.Name).WithConsumer(consumerType.HandlerType));
+                    }
+                })
+                .WithDependencyResolver(new AspNetCoreMessageBusDependencyResolver(serviceProvider))
+                .WithProviderMemory(new MemoryMessageBusSettings
+                {
+                    EnableMessageSerialization = false
+                });
+
+            return mbb.Build();
+        }
+
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
-
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-
             app.UseRouting();
-
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }
