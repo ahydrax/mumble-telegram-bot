@@ -26,9 +26,16 @@ namespace KNFA.Bots.MTB.Consumers
 
         public async Task OnHandle(UserListRequested message, string name)
         {
-            var userListText = string.Join("\r\n", _protocol.GetUsers().Select(x => x.Name));
-
-            await _messageBus.Publish(new TextMessage(userListText));
+            var users = _protocol.GetUsers().ToArray();
+            if (users.Length == 0)
+            {
+                await _messageBus.Publish(new TextMessage("No users connected"));
+            }
+            else
+            {
+                var userListText = string.Join("\r\n", users.Select(x => x.Name));
+                await _messageBus.Publish(new TextMessage(userListText));
+            }
 
             _logger.LogInformation("User list requested by {Requester}", message.Requester);
         }
