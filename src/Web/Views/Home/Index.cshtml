@@ -1,0 +1,31 @@
+﻿@model string[]
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <title>Mumble Telegram bot</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <h3>Active Mumble users:</h3>
+    <ul class="list-group list-group-flush">
+        @if (Model.Length == 0)
+        {
+            <li class="list-group-item">
+                <i>No users connected</i>
+            </li>
+        }
+        @foreach (var username in Model)
+        {
+            <li class="list-group-item">@username</li>
+        }
+    </ul>
+</div>
+</body>
+</html>

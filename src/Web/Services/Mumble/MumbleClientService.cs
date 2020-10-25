@@ -45,7 +45,7 @@ namespace KNFA.Bots.MTB.Services.Mumble
             // sorry
             Task.Run(async () =>
             {
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 _mumbleProtocol.SetInitialized();
             });
 

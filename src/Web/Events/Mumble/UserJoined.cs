@@ -2,11 +2,11 @@
 
 namespace KNFA.Bots.MTB.Events.Mumble
 {
-    public class UserLeft
+    public class UserJoined
     {
         public string Username { get; }
 
-        public UserLeft(string username)
+        public UserJoined(string username)
         {
             Username = username ?? throw new ArgumentNullException(nameof(username));
         }

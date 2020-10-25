@@ -25,10 +25,10 @@ namespace KNFA.Bots.MTB
                         Path.Combine(currentDirectory, "Audio", "Codecs", "Opus", "Libs", "64bit", "opus.dll")),
                     (Architecture.X64, false) => (
                         Path.Combine(currentDirectory, "NativeDependencies", "libopus.so.0"),
-                        Path.Combine(currentDirectory, "Audio", "Codecs", "Opus", "Libs", "libopus.so.0")),
+                        Path.Combine(currentDirectory, "libopus.so.0")),
                     _ => throw new ApplicationException("Only linux64 and win64 are supported.")
                 };
-
+            
             if (!File.Exists(destinationLibPath))
             {
                 var directory = Path.GetDirectoryName(destinationLibPath);

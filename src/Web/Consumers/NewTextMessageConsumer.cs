@@ -2,9 +2,10 @@
 using System.Threading;
 using System.Threading.Tasks;
 using KNFA.Bots.MTB.Events.Telegram;
+using KNFA.Bots.MTB.Services.Telegram;
 using SlimMessageBus;
 
-namespace KNFA.Bots.MTB.Services.Telegram
+namespace KNFA.Bots.MTB.Consumers
 {
     public class NewTextMessageConsumer : IConsumer<TextMessage>
     {

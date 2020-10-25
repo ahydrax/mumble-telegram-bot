@@ -1,4 +1,4 @@
-﻿using KNFA.Bots.MTB.Events.Telegram;
+﻿using KNFA.Bots.MTB.Events.Mumble;
 using Microsoft.Extensions.Logging;
 using MumbleSharp;
 using MumbleSharp.Model;
@@ -26,7 +26,7 @@ namespace KNFA.Bots.MTB.Services.Mumble
 
             if (!_initialized) return;
             _logger.LogInformation("User joined {Username}", user.Name);
-            _messageBus.Publish(new TextMessage($"{user.Name} joined"));
+            _messageBus.Publish(new UserJoined(user.Name));
         }
 
         protected override void UserLeft(User user)
@@ -35,7 +35,7 @@ namespace KNFA.Bots.MTB.Services.Mumble
 
             if (!_initialized) return;
             _logger.LogInformation("User left {Username}", user.Name);
-            _messageBus.Publish(new TextMessage($"{user.Name} left"));
+            _messageBus.Publish(new UserLeft(user.Name));
         }
     }
 }

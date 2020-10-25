@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using KNFA.Bots.MTB.Configuration;
+using KNFA.Bots.MTB.Consumers;
 using KNFA.Bots.MTB.Events.Mumble;
 using KNFA.Bots.MTB.Events.Telegram;
 using KNFA.Bots.MTB.Services.Mumble;
@@ -41,8 +42,10 @@ namespace KNFA.Bots.MTB
             services.AddSingleton<MumbleClientService>();
             services.AddHostedService(x => x.GetRequiredService<MumbleClientService>());
 
-            services.AddSingleton<NewTextMessageConsumer>();
-            services.AddSingleton<UserListRequestedConsumer>();
+            services.AddTransient<NewTextMessageConsumer>();
+            services.AddTransient<UserListRequestedConsumer>();
+            services.AddTransient<UserJoinedConsumer>();
+            services.AddTransient<UserLeftConsumer>();
 
             services.AddHttpContextAccessor();
             services.AddControllersWithViews();
@@ -54,7 +57,7 @@ namespace KNFA.Bots.MTB
 
             var mbb = MessageBusBuilder.Create()
                 .Produce<UserLeft>(x => x.DefaultTopic(x.Settings.MessageType.Name))
-                .Produce<UserEntered>(x => x.DefaultTopic(x.Settings.MessageType.Name))
+                .Produce<UserJoined>(x => x.DefaultTopic(x.Settings.MessageType.Name))
                 .Produce<UserListRequested>(x => x.DefaultTopic(x.Settings.MessageType.Name))
                 .Produce<TextMessage>(x => x.DefaultTopic(x.Settings.MessageType.Name))
                 .Do(builder =>

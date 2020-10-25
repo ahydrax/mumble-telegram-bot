@@ -2,11 +2,11 @@
 using System.Linq;
 using System.Threading.Tasks;
 using KNFA.Bots.MTB.Events.Telegram;
+using KNFA.Bots.MTB.Services.Mumble;
 using Microsoft.Extensions.Logging;
-using MumbleSharp;
 using SlimMessageBus;
 
-namespace KNFA.Bots.MTB.Services.Mumble
+namespace KNFA.Bots.MTB.Consumers
 {
     public class UserListRequestedConsumer : IConsumer<UserListRequested>
     {
@@ -26,11 +26,7 @@ namespace KNFA.Bots.MTB.Services.Mumble
 
         public async Task OnHandle(UserListRequested message, string name)
         {
-            var userListText =
-                string.Join("\r\n",
-                    _protocol.Users
-                        .Where(x => x.Id != _protocol.LocalUser.Id)
-                        .Select(x => x.Name));
+            var userListText = string.Join("\r\n", _protocol.GetUsers().Select(x => x.Name));
 
             await _messageBus.Publish(new TextMessage(userListText));
 
