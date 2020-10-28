@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Grpc.Core;
 using KNFA.Bots.MTB.Configuration;
 using KNFA.Bots.MTB.Consumers;
 using KNFA.Bots.MTB.Events.Mumble;
@@ -10,11 +11,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MumbleSharp;
+using MurmurRPC;
 using SlimMessageBus;
 using SlimMessageBus.Host.AspNetCore;
 using SlimMessageBus.Host.Config;
 using SlimMessageBus.Host.Memory;
+using TextMessage = KNFA.Bots.MTB.Events.Telegram.TextMessage;
 
 namespace KNFA.Bots.MTB
 {
@@ -31,6 +33,14 @@ namespace KNFA.Bots.MTB
         {
             var appConfig = Configuration.Get<ApplicationConfiguration>();
 
+            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
+            services.AddGrpcClient<V1.V1Client>(options =>
+            {
+                options.Address = new Uri(appConfig.Mumble.GrpcAddress);
+                options.ChannelOptionsActions.Add(channelOptions => channelOptions.Credentials = ChannelCredentials.Insecure);
+            });
+
             services.AddSingleton(appConfig.Telegram);
             services.AddSingleton<TelegramService>();
             services.AddHostedService(x => x.GetRequiredService<TelegramService>());
@@ -38,9 +48,9 @@ namespace KNFA.Bots.MTB
 
             services.AddSingleton(BuildMessageBus);
             services.AddSingleton(appConfig.Mumble);
-            services.AddSingleton<EventProtocol>();
             services.AddSingleton<MumbleClientService>();
             services.AddHostedService(x => x.GetRequiredService<MumbleClientService>());
+            services.AddSingleton<IMumbleInfo>(x => x.GetRequiredService<MumbleClientService>());
 
             services.AddTransient<NewTextMessageConsumer>();
             services.AddTransient<UserListRequestedConsumer>();

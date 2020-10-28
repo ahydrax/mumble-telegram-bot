@@ -1,75 +1,82 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using KNFA.Bots.MTB.Configuration;
+using Google.Protobuf.Collections;
+using KNFA.Bots.MTB.Events.Mumble;
 using Microsoft.Extensions.Logging;
-using MumbleSharp;
+using MurmurRPC;
+using SlimMessageBus;
 
 namespace KNFA.Bots.MTB.Services.Mumble
 {
-    public class MumbleClientService : BackgroundService
+    public class MumbleClientService : BackgroundService, IMumbleInfo
     {
-        private readonly EventProtocol _mumbleProtocol;
-        private readonly MumbleConfiguration _configuration;
+        private readonly IMessageBus _messageBus;
         private readonly ILogger<MumbleClientService> _logger;
-        private readonly MumbleConnection _mumbleConnection;
+        private readonly V1.V1Client _grpcClient;
 
         public MumbleClientService(
-            EventProtocol mumbleProtocol,
-            MumbleConfiguration configuration,
+            IMessageBus messageBus,
+            V1.V1Client grpcClient,
             ILogger<MumbleClientService> logger)
         {
-            _mumbleProtocol = mumbleProtocol ?? throw new ArgumentNullException(nameof(mumbleProtocol));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
+            _grpcClient = grpcClient ?? throw new ArgumentNullException(nameof(grpcClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _mumbleConnection = new MumbleConnection(configuration.Host, configuration.Port, mumbleProtocol);
         }
 
         protected override ILogger Logger => _logger;
 
-        protected override Task OnStart(CancellationToken ct)
-        {
-            _logger.LogInformation(AppDomain.CurrentDomain.BaseDirectory);
-
-            _mumbleConnection.Connect(
-                _configuration.Username,
-                _configuration.Password,
-                new string[0],
-                _configuration.Host);
-
-            return Task.CompletedTask;
-        }
+        protected override Task OnStart(CancellationToken ct) => Task.CompletedTask;
 
         protected override async Task Execute(CancellationToken ct)
         {
-            // sorry
-            Task.Run(async () =>
+            var previousUsersState = await GetUsersAsync();
+            while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(10));
-                _mumbleProtocol.SetInitialized();
-            });
+                await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                var currentState = await GetUsersAsync();
 
-            while (_mumbleConnection.State != ConnectionStates.Disconnected)
-            {
-                if (_mumbleConnection.Process())
+                var deltaJoined = currentState.Except(previousUsersState).ToArray();
+                var deltaLeft = previousUsersState.Except(currentState).ToArray();
+
+                foreach (var user in deltaJoined)
                 {
-                    await Task.Yield();
-                }
-                else
-                {
-                    await Task.Delay(100, ct);
+                    await _messageBus.Publish(new UserJoined(user.Username));
                 }
 
-                ct.ThrowIfCancellationRequested();
+                foreach (var user in deltaLeft)
+                {
+                    await _messageBus.Publish(new UserLeft(user.Username));
+                }
+
+                previousUsersState = currentState;
             }
         }
 
-        protected override Task OnStop(CancellationToken ct)
-        {
-            _mumbleConnection.Close();
-            return Task.CompletedTask;
-        }
+        protected override Task OnStop(CancellationToken ct) => Task.CompletedTask;
 
         protected override void OnError(Exception e) => Environment.FailFast("Mumble failed", e);
+
+        public async Task<User[]> GetUsersAsync()
+        {
+            var serverResponse = await _grpcClient.ServerQueryAsync(new Server.Types.Query());
+            var server = serverResponse.Servers.First();
+            var userResponse = await _grpcClient.UserQueryAsync(new MurmurRPC.User.Types.Query { Server = new Server { Id = server.Id } });
+            if (userResponse == null) return Array.Empty<User>();
+            return userResponse.Users.ToDto();
+        }
+    }
+
+    public static class GrpcUsersExtensions
+    {
+        public static User[] ToDto(this RepeatedField<MurmurRPC.User> users)
+            => users.Select(x => new User(x.Id, x.Name)).ToArray();
+    }
+
+    public interface IMumbleInfo
+    {
+        Task<User[]> GetUsersAsync();
     }
 }

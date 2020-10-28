@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using KNFA.Bots.MTB.Services.Mumble;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,18 +8,18 @@ namespace KNFA.Bots.MTB.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly EventProtocol _eventProtocol;
+        private readonly IMumbleInfo _mumbleInfo;
 
-        public HomeController(EventProtocol eventProtocol)
+        public HomeController(IMumbleInfo mumbleInfo)
         {
-            _eventProtocol = eventProtocol ?? throw new ArgumentNullException(nameof(eventProtocol));
+            _mumbleInfo = mumbleInfo ?? throw new ArgumentNullException(nameof(mumbleInfo));
         }
 
         [HttpGet("/")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var users = _eventProtocol.GetUsers().Select(x => x.Name).ToArray();
-            return View(users);
+            var users = await _mumbleInfo.GetUsersAsync();
+            return View(users.Select(x => x.Username).ToArray());
         }
     }
 }
