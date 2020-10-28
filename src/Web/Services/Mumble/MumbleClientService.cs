@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf.Collections;
+using Grpc.Core;
 using KNFA.Bots.MTB.Events.Mumble;
 using Microsoft.Extensions.Logging;
 using MurmurRPC;
@@ -32,26 +33,22 @@ namespace KNFA.Bots.MTB.Services.Mumble
 
         protected override async Task Execute(CancellationToken ct)
         {
-            var previousUsersState = await GetUsersAsync();
-            while (!ct.IsCancellationRequested)
+            var serverResponse = await _grpcClient.ServerQueryAsync(new Server.Types.Query());
+            var server = serverResponse.Servers.First();
+
+            var eventStream = _grpcClient.ServerEvents(new Server {Id = server.Id});
+
+            await foreach (var @event in eventStream.ResponseStream.ReadAllAsync(cancellationToken: ct))
             {
-                await Task.Delay(TimeSpan.FromSeconds(1), ct);
-                var currentState = await GetUsersAsync();
-
-                var deltaJoined = currentState.Except(previousUsersState).ToArray();
-                var deltaLeft = previousUsersState.Except(currentState).ToArray();
-
-                foreach (var user in deltaJoined)
+                switch (@event.Type)
                 {
-                    await _messageBus.Publish(new UserJoined(user.Username));
+                    case Server.Types.Event.Types.Type.UserConnected:
+                        await _messageBus.Publish(new UserJoined(@event.User.Name));
+                        break;
+                    case Server.Types.Event.Types.Type.UserDisconnected:
+                        await _messageBus.Publish(new UserLeft(@event.User.Name));
+                        break;
                 }
-
-                foreach (var user in deltaLeft)
-                {
-                    await _messageBus.Publish(new UserLeft(user.Username));
-                }
-
-                previousUsersState = currentState;
             }
         }
 
