@@ -28,7 +28,7 @@ namespace KNFA.Bots.MTB.Services.Telegram
             _telegramBotClient = new TelegramBotClient(configuration.BotToken);
             _telegramBotClient.OnMessage += ProcessMessage;
             _telegramBotClient.OnReceiveError += LogReceiveError;
-            _telegramBotClient.OnReceiveGeneralError += LogGeneralError;
+            _telegramBotClient.OnReceiveGeneralError += OnReceiveGeneralError;
         }
 
         public async Task SendTextMessage(string text, CancellationToken ct)
@@ -75,8 +75,11 @@ namespace KNFA.Bots.MTB.Services.Telegram
         private void LogReceiveError(object? sender, ReceiveErrorEventArgs e)
             => _logger.LogError(e.ApiRequestException, "Receive error occured: {errorMessage}", e.ApiRequestException.Message);
 
-        private void LogGeneralError(object? sender, ReceiveGeneralErrorEventArgs e)
-            => _logger.LogError(e.Exception, "Receive error occured: {errorMessage}", e.Exception.Message);
+        private void OnReceiveGeneralError(object? sender, ReceiveGeneralErrorEventArgs e)
+        {
+            _logger.LogError(e.Exception, "Receive error occured: {errorMessage}", e.Exception.Message);
+            Environment.FailFast("Telegram service failed");
+        }
 
         public Task StartAsync(CancellationToken ct)
         {
