@@ -38,4 +38,23 @@
         <Protobuf Include="Mumble\MurmurRPC.proto" GrpcServices="Client" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Update="C:\Users\ahydr\.nuget\packages\bootstrap\4.6.0\contentFiles\any\any\wwwroot\js\bootstrap.bundle.min.js">
+        <NuGetPackageId>bootstrap</NuGetPackageId>
+        <NuGetPackageVersion>4.6.0</NuGetPackageVersion>
+        <NuGetItemType>Content</NuGetItemType>
+        <Private>False</Private>
+        <Link>wwwroot\js\bootstrap.bundle.min.js</Link>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="C:\Users\ahydr\.nuget\packages\bootstrap\4.6.0\contentFiles\any\any\wwwroot\css\bootstrap.min.css">
+        <NuGetPackageId>bootstrap</NuGetPackageId>
+        <NuGetPackageVersion>4.6.0</NuGetPackageVersion>
+        <NuGetItemType>Content</NuGetItemType>
+        <Private>False</Private>
+        <Link>wwwroot\css\bootstrap.min.css</Link>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>
