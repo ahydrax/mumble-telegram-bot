@@ -34,7 +34,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="Mumble\MurmurRPC.proto" GrpcServices="Client" />
+        <Protobuf Include="Mumble\MurmurRPC.proto" GrpcServices="Client" Access="Internal" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="wwwroot\favicon.ico">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>

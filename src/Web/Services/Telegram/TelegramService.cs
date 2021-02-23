@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using KNFA.Bots.MTB.Configuration;
+using KNFA.Bots.MTB.Configurations;
 using KNFA.Bots.MTB.Events.Telegram;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,7 +13,12 @@ using Telegram.Bot.Types.Enums;
 
 namespace KNFA.Bots.MTB.Services.Telegram
 {
-    public class TelegramService : IHostedService, ITelegramMessageSender
+    public interface ITelegramMessageSender
+    {
+        Task SendTextMessage(string text, CancellationToken ct);
+    }
+    
+    internal class TelegramService : IHostedService, ITelegramMessageSender
     {
         private readonly TelegramConfiguration _configuration;
         private readonly IMessageBus _messageBus;

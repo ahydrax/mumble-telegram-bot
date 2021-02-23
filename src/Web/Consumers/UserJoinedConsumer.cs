@@ -11,13 +11,9 @@ namespace KNFA.Bots.MTB.Consumers
         private readonly IMessageBus _messageBus;
 
         public UserJoinedConsumer(IMessageBus messageBus)
-        {
-            _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
-        }
+            => _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
 
         public async Task OnHandle(UserJoined message, string name)
-        {
-            await _messageBus.Publish(new TextMessage($"{message.Username} joined"));
-        }
+            => await _messageBus.Publish(new SendTextMessage($"{message.Username} joined"));
     }
 }

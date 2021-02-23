@@ -29,12 +29,12 @@ namespace KNFA.Bots.MTB.Consumers
             var users = await _mumbleInfo.GetUsersAsync();
             if (users.Length == 0)
             {
-                await _messageBus.Publish(new TextMessage("No users connected"));
+                await _messageBus.Publish(new SendTextMessage("No users connected"));
             }
             else
             {
                 var userListText = string.Join("\r\n", users.Select(x => x.Username));
-                await _messageBus.Publish(new TextMessage(userListText));
+                await _messageBus.Publish(new SendTextMessage(userListText));
             }
 
             _logger.LogInformation("User list requested by {Requester}", message.Requester);

@@ -11,7 +11,14 @@ using SlimMessageBus;
 
 namespace KNFA.Bots.MTB.Services.Mumble
 {
-    public class MumbleClientService : BackgroundService, IMumbleInfo
+    public record User(uint Id, string Username);
+
+    public interface IMumbleInfo
+    {
+        Task<User[]> GetUsersAsync();
+    }
+
+    internal class MumbleClientService : BackgroundService, IMumbleInfo
     {
         private readonly IMessageBus _messageBus;
         private readonly ILogger<MumbleClientService> _logger;
@@ -36,7 +43,7 @@ namespace KNFA.Bots.MTB.Services.Mumble
             var serverResponse = await _grpcClient.ServerQueryAsync(new Server.Types.Query());
             var server = serverResponse.Servers.First();
 
-            var eventStream = _grpcClient.ServerEvents(new Server {Id = server.Id});
+            var eventStream = _grpcClient.ServerEvents(new Server { Id = server.Id });
 
             await foreach (var @event in eventStream.ResponseStream.ReadAllAsync(cancellationToken: ct))
             {
@@ -60,20 +67,20 @@ namespace KNFA.Bots.MTB.Services.Mumble
         {
             var serverResponse = await _grpcClient.ServerQueryAsync(new Server.Types.Query());
             var server = serverResponse.Servers.First();
-            var userResponse = await _grpcClient.UserQueryAsync(new MurmurRPC.User.Types.Query { Server = new Server { Id = server.Id } });
-            if (userResponse == null) return Array.Empty<User>();
-            return userResponse.Users.ToDto();
+            var userResponse = await _grpcClient.UserQueryAsync(new MurmurRPC.User.Types.Query
+                { Server = new Server { Id = server.Id } });
+
+            return userResponse switch
+            {
+                { } r => r.Users.ToDto(),
+                null => Array.Empty<User>()
+            };
         }
     }
 
-    public static class GrpcUsersExtensions
+    internal static class GrpcUsersExtensions
     {
         public static User[] ToDto(this RepeatedField<MurmurRPC.User> users)
             => users.Select(x => new User(x.Id, x.Name)).ToArray();
-    }
-
-    public interface IMumbleInfo
-    {
-        Task<User[]> GetUsersAsync();
     }
 }

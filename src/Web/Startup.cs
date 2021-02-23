@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using Grpc.Core;
-using KNFA.Bots.MTB.Configuration;
+using KNFA.Bots.MTB.Configurations;
 using KNFA.Bots.MTB.Consumers;
 using KNFA.Bots.MTB.Events.Mumble;
 using KNFA.Bots.MTB.Events.Telegram;
@@ -16,7 +16,6 @@ using SlimMessageBus;
 using SlimMessageBus.Host.AspNetCore;
 using SlimMessageBus.Host.Config;
 using SlimMessageBus.Host.Memory;
-using TextMessage = KNFA.Bots.MTB.Events.Telegram.TextMessage;
 
 namespace KNFA.Bots.MTB
 {
@@ -52,7 +51,7 @@ namespace KNFA.Bots.MTB
             services.AddHostedService(x => x.GetRequiredService<MumbleClientService>());
             services.AddSingleton<IMumbleInfo>(x => x.GetRequiredService<MumbleClientService>());
 
-            services.AddTransient<NewTextMessageConsumer>();
+            services.AddTransient<SendTextMessageConsumer>();
             services.AddTransient<UserListRequestedConsumer>();
             services.AddTransient<UserJoinedConsumer>();
             services.AddTransient<UserLeftConsumer>();
@@ -69,7 +68,7 @@ namespace KNFA.Bots.MTB
                 .Produce<UserLeft>(x => x.DefaultTopic(x.Settings.MessageType.Name))
                 .Produce<UserJoined>(x => x.DefaultTopic(x.Settings.MessageType.Name))
                 .Produce<UserListRequested>(x => x.DefaultTopic(x.Settings.MessageType.Name))
-                .Produce<TextMessage>(x => x.DefaultTopic(x.Settings.MessageType.Name))
+                .Produce<SendTextMessage>(x => x.DefaultTopic(x.Settings.MessageType.Name))
                 .Do(builder =>
                 {
                     var consumers = domainAssembly
@@ -99,6 +98,7 @@ namespace KNFA.Bots.MTB
         {
             app.UseForwardedHeaders();
             app.UseRouting();
+            app.UseStaticFiles();
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
