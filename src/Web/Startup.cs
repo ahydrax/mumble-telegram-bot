@@ -98,7 +98,7 @@ namespace KNFA.Bots.MTB
         {
             app.UseForwardedHeaders();
             app.UseRouting();
-            app.UseStaticFiles();
+            app.Map("/favicon.ico", x => x.UseStaticFiles());
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
