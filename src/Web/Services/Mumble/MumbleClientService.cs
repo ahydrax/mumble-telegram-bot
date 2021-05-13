@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Google.Protobuf.Collections;
 using Grpc.Core;
 using KNFA.Bots.MTB.Events.Mumble;
 using Microsoft.Extensions.Logging;
@@ -43,7 +43,7 @@ namespace KNFA.Bots.MTB.Services.Mumble
             var serverResponse = await _grpcClient.ServerQueryAsync(new Server.Types.Query());
             var server = serverResponse.Servers.First();
 
-            var eventStream = _grpcClient.ServerEvents(new Server { Id = server.Id });
+            var eventStream = _grpcClient.ServerEvents(new Server { Id = server.Id }, cancellationToken: ct);
 
             await foreach (var @event in eventStream.ResponseStream.ReadAllAsync(cancellationToken: ct))
             {
@@ -80,7 +80,7 @@ namespace KNFA.Bots.MTB.Services.Mumble
 
     internal static class GrpcUsersExtensions
     {
-        public static User[] ToDto(this RepeatedField<MurmurRPC.User> users)
+        public static User[] ToDto(this IEnumerable<MurmurRPC.User> users)
             => users.Select(x => new User(x.Id, x.Name)).ToArray();
     }
 }
