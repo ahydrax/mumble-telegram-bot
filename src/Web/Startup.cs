@@ -31,6 +31,7 @@ namespace KNFA.Bots.MTB
         public void ConfigureServices(IServiceCollection services)
         {
             var appConfig = Configuration.Get<ApplicationConfiguration>();
+            ThrowIfAppConfigIsInvalid(appConfig);
 
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
@@ -58,6 +59,21 @@ namespace KNFA.Bots.MTB
 
             services.AddHttpContextAccessor();
             services.AddControllersWithViews();
+        }
+
+        private static void ThrowIfAppConfigIsInvalid(ApplicationConfiguration appConfig)
+        {
+            if (appConfig.Mumble == null)
+                throw new ApplicationException($"{nameof(appConfig.Mumble)} is null");
+            if (appConfig.Mumble.GrpcAddress == null)
+                throw new ApplicationException($"{nameof(appConfig.Mumble.GrpcAddress)} is null");
+
+            if (appConfig.Telegram == null)
+                throw new ApplicationException($"{nameof(appConfig.Telegram)} is null");
+            if (appConfig.Telegram.BotToken == null)
+                throw new ApplicationException($"{nameof(appConfig.Telegram.BotToken)} is null");
+            if (appConfig.Telegram.BotUsername == null)
+                throw new ApplicationException($"{nameof(appConfig.Telegram.BotUsername)} is null");
         }
 
         private static IMessageBus BuildMessageBus(IServiceProvider serviceProvider)

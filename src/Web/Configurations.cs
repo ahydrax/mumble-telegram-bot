@@ -4,19 +4,19 @@
     {
         public record ApplicationConfiguration
         {
-            public MumbleConfiguration Mumble { get; init; }
-            public TelegramConfiguration Telegram { get; init; }
+            public MumbleConfiguration Mumble { get; init; } = null!;
+            public TelegramConfiguration Telegram { get; init; } = null!;
         }
 
         public record MumbleConfiguration
         {
-            public string GrpcAddress { get; init; }
+            public string GrpcAddress { get; init; } = null!;
         }
 
         public record TelegramConfiguration
         {
-            public string BotToken { get; init; }
-            public string BotUsername { get; init; }
+            public string BotToken { get; init; } = null!;
+            public string BotUsername { get; init; } = null!;
             public long HostGroupId { get; init; }
         }
     }
